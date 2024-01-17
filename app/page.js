@@ -1,95 +1,125 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client"
+import { useState, useEffect } from "react";
+import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { BiDownArrowAlt, BiPencil, BiPlus, BiSave, BiTrashAlt, BiUpArrowAlt, BiX } from "react-icons/bi";
 
 export default function Home() {
+
+  const [value, setValue] = useState('');
+  const [error, setError] = useState(false);
+  const [items, setItems] = useState(JSON.parse(localStorage.getItem('items')) || []);
+  const [edit_item, setEditItem] = useState(null);
+
+  const [animateParent] = useAutoAnimate();
+
+  useEffect(() => {
+    localStorage.setItem('items', JSON.stringify(items));
+  }, [items]);
+
+  const addItem = () => {
+    if (value !== '') {
+      setItems([...items, {
+        value: value,
+        completed: false
+      }]);
+      setValue('');
+      setError(false);
+    }
+    else {
+      setError(true);
+    }
+  }
+
+  const completeItem = (index) => {
+    const clonedItems = [...items];
+    clonedItems[index].completed === false ? clonedItems[index].completed = true : clonedItems[index].completed = false;
+    setItems(clonedItems);
+  }
+
+  const deleteItem = (index) => {
+    const clonedItems = items.filter((item, i) => i !== index);
+    setItems(clonedItems);
+  }
+
+  const saveItem = (item) => {
+    if (item.value !== '') {
+      items[item.index].value = item.value;
+      setItems(items);
+      setEditItem(null);
+      setError(false);
+    }
+    else {
+      setError(true);
+    }
+  }
+
+  const move = (index, direction) => {
+    let temp;
+    const clonedItems = [...items];
+    if (direction === 'up') {
+      temp = clonedItems[index - 1];
+      clonedItems[index - 1] = clonedItems[index];
+    }
+
+    if (direction === 'down') {
+      temp = clonedItems[index + 1];
+      clonedItems[index + 1] = clonedItems[index];
+    }
+
+    clonedItems[index] = temp;
+    setItems(clonedItems);
+  };
+
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <>
+      <div className="card">
+        <h2 className="mb-5">To-Do List App</h2>
+        <div className="input-wrap">
+          <input className={error ? 'error' : ''} value={value} onChange={(e) => { setValue(e.target.value) }} type="text" placeholder="Type something" />
+          <button onClick={addItem}><BiPlus /> Add</button>
+        </div>
+        {items.length > 0 &&
+          <ul className="list" ref={animateParent}>
+            {
+              items.map((item, index) => (
+                <li key={index}>
+                  <label className="custom-checkbox">
+                    <input type="checkbox" name={"item-" + index} checked={item.completed} onChange={(e) => completeItem(index)} />
+                    <span className="checkvalue">{item.value}</span>
+                    <span className="checkmark"></span>
+                  </label>
+                  <div className="controls">
+                    {index !== 0 && <button title={"Move up"} onClick={() => move(index, 'up')}><BiUpArrowAlt /></button>}
+                    {(index !== (items.length - 1)) && <button title={"Move down"} onClick={() => move(index, 'down')}><BiDownArrowAlt /></button>}
+                    <button onClick={() => setEditItem({ index: index, value: item.value })}><BiPencil /></button>
+                    <button onClick={() => deleteItem(index)}><BiTrashAlt /></button>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+        }
+      </div>
+
+      <div className={'modal-wrap' + (edit_item !== null ? ' show' : '')}>
+        <div className="modal">
+          <div className="modal-header">
+            <h4>Edit item</h4>
+            <button onClick={() => setEditItem(null)}><BiX /></button>
+          </div>
+          <div className="pt-4">
+            <div className="input-wrap">
+              {edit_item !== null &&
+                <>
+                  <input className={error ? 'error' : ''} value={edit_item.value} onChange={(e) => { setEditItem({ index: edit_item.index, value: e.target.value }) }} type="text" placeholder="Type something" />
+                  <button onClick={() => saveItem(edit_item)}><BiSave /> Save</button>
+                </>
+              }
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </>
   )
 }
